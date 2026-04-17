@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { colors } from '../constants/colors';
 
@@ -37,31 +38,22 @@ export default function SignUpScreen() {
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Card */}
         <View style={styles.card}>
-          {/* Logo */}
           <Text style={styles.logo}>Bundly</Text>
-
-          {/* Title */}
           <Text style={styles.title}>Create your account</Text>
-          <Text style={styles.subtitle}>
-            Start your journey with Bundly today.
-          </Text>
+          <Text style={styles.subtitle}>Start your journey with Bundly today.</Text>
 
-          {/* Google Button */}
           <TouchableOpacity style={styles.googleBtn}>
             <Ionicons name="logo-google" size={18} color={colors.text.primary} />
             <Text style={styles.googleBtnText}>Sign up with Google</Text>
           </TouchableOpacity>
 
-          {/* Divider */}
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />
             <Text style={styles.dividerText}>OR USE EMAIL</Text>
             <View style={styles.dividerLine} />
           </View>
 
-          {/* Email */}
           <Text style={styles.label}>EMAIL ADDRESS</Text>
           <TextInput
             value={email}
@@ -74,7 +66,6 @@ export default function SignUpScreen() {
             style={styles.input}
           />
 
-          {/* Password */}
           <Text style={styles.label}>PASSWORD</Text>
           <View style={styles.passwordRow}>
             <TextInput
@@ -97,7 +88,6 @@ export default function SignUpScreen() {
             Must be at least 8 characters with one special symbol.
           </Text>
 
-          {/* Create Account */}
           <TouchableOpacity
             style={[styles.createBtn, loading && styles.createBtnDisabled]}
             onPress={handleSignUp}
@@ -109,15 +99,13 @@ export default function SignUpScreen() {
             </Text>
           </TouchableOpacity>
 
-          {/* Sign In */}
           <View style={styles.signinRow}>
             <Text style={styles.signinText}>Already have an account? </Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/')}>
               <Text style={styles.signinLink}>Sign In</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Terms */}
           <Text style={styles.terms}>
             By signing up, you agree to our{' '}
             <Text style={styles.termsLink}>Terms of Service</Text>
@@ -125,18 +113,14 @@ export default function SignUpScreen() {
             <Text style={styles.termsLink}>Privacy Policy</Text>.
           </Text>
         </View>
-
       </ScrollView>
 
-      {/* Footer */}
-      <View>
-        <View style={styles.footer}>
+      <View style={styles.footer}>
         <Ionicons name="globe-outline" size={22} color={colors.text.secondary} />
         <Ionicons name="help-circle-outline" size={22} color={colors.text.secondary} />
         <Ionicons name="lock-closed-outline" size={22} color={colors.text.secondary} />
-        </View>
-      <Text style={styles.copyright}>© 2025 BUNDLY</Text>
       </View>
+      <Text style={styles.copyright}>© 2025 BUNDLY</Text>
     </View>
   );
 }
@@ -161,21 +145,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   logo: {
-    textAlign: 'center',
-    fontSize: 30,
+    fontSize: 26,
     fontWeight: '800',
     color: colors.primary.main,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   title: {
-    textAlign: 'center',
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '800',
     color: colors.text.primary,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   subtitle: {
-    textAlign: 'center',
     color: colors.text.secondary,
     fontSize: 14,
     lineHeight: 20,
@@ -260,7 +241,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   createBtnText: {
-    color: '#FFFFFF',
+    color: colors.primary.contrast,
     fontWeight: '700',
     fontSize: 16,
   },
@@ -282,7 +263,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 11,
     color: colors.text.disabled,
-    alignSelf: 'flex-end',
     lineHeight: 17,
   },
   termsLink: {
