@@ -125,10 +125,6 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity onPress={() => router.push('/(tabs)/home')} style={styles.skipBtn}>
-            <Text style={styles.skipText}>Skip — Browse App</Text>
-          </TouchableOpacity>
-
           <Text style={styles.terms}>
             <Text style={styles.termsLink}>Privacy</Text>
             {'  •  '}
@@ -303,16 +299,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   termsLink: {
-    textDecorationLine: 'underline',
-  },
-  skipBtn: {
-    alignItems: 'center',
-    paddingVertical: 10,
-    marginBottom: 8,
-  },
-  skipText: {
-    fontSize: 13,
-    color: colors.text.disabled,
     textDecorationLine: 'underline',
   },
 });
