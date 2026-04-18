@@ -39,3 +39,9 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Supermarket sync artifacts
+scripts/dumps/
+scripts/outputs/
+scripts/logging.log
+logging.log

@@ -15,11 +15,17 @@ Verified column names (from local test run 2026-04-18):
 
 import glob
 import json
+import multiprocessing
 import os
 import pathlib
 
 import pandas as pd
 from supabase import create_client
+
+# Required on macOS (Python ≥3.14 defaults to "spawn" multiprocessing).
+# Must be called before any multiprocessing code runs.
+if multiprocessing.get_start_method(allow_none=True) is None:
+    multiprocessing.set_start_method("fork")
 
 # ---------------------------------------------------------------------------
 # Setup

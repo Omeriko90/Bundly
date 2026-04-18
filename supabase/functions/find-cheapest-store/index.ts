@@ -58,7 +58,12 @@ async function reverseGeocode(lat: number, lon: number): Promise<string | null> 
 
 /** Normalize city name: strip hyphens, trim whitespace, normalize Hebrew encoding. */
 function normalizeCity(city: string): string {
-  return city.replace(/-/g, " ").trim();
+  // Strip hyphens/dashes (ASCII, Hebrew en-dash ‑, em-dash —, Unicode ‒–—)
+  // and take only the primary city name before any "–" separator.
+  // e.g. "תל־אביב–יפו" → "תל אביב"
+  //      "באר-שבע"      → "באר שבע"
+  const primary = city.split(/[–—]/)[0];           // split on en/em dash
+  return primary.replace(/[-\u05BE\u2010-\u2015]/g, " ").trim();
 }
 
 Deno.serve(async (req) => {
