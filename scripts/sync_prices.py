@@ -22,10 +22,13 @@ import pathlib
 import pandas as pd
 from supabase import create_client
 
-# Required on macOS (Python ≥3.14 defaults to "spawn" multiprocessing).
-# Must be called before any multiprocessing code runs.
-if multiprocessing.get_start_method(allow_none=True) is None:
-    multiprocessing.set_start_method("fork")
+# On Linux (GitHub Actions) fork is the default and required by the parser.
+# On macOS, setting fork globally crashes the async scrapers (Shufersal, Victory)
+# due to ObjC runtime conflicts. macOS users should run run_parser.py separately.
+import sys as _sys
+if _sys.platform != "darwin":
+    if multiprocessing.get_start_method(allow_none=True) is None:
+        multiprocessing.set_start_method("fork")
 
 # ---------------------------------------------------------------------------
 # Setup
