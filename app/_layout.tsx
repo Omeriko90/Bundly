@@ -9,6 +9,7 @@ export default function RootLayout() {
       <Stack.Screen name="bundle/create" options={{ presentation: 'modal' }} />
       <Stack.Screen name="bundle/[id]" />
       <Stack.Screen name="bundle/[id]/invite" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="bundle/[id]/cheapest-store" options={{ presentation: 'modal' }} />
     </Stack>
   );
 }

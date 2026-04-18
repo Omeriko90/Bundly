@@ -1,0 +1,42 @@
+name: Sync Israeli Supermarket Prices
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # daily at 2am UTC (4am Israel time)
+  workflow_dispatch:        # allow manual trigger from GitHub Actions UI
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('scripts/requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: pip install il-supermarket-scraper il-supermarket-parser supabase pandas
+
+      - name: Run price sync
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python scripts/sync_prices.py
+
+      - name: Upload outputs on failure (for debugging)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sync-debug-outputs
+          path: outputs/
+          retention-days: 3

@@ -9,6 +9,8 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +18,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { colors } from '../../constants/colors';
 import ItemRow from '../../components/ItemRow';
 import ConfettiBurst from '../../components/ConfettiBurst';
+import { usePriceFinder } from '../../hooks/usePriceFinder';
 
 const MOCK_BUNDLE = {
   id: '1',
@@ -44,6 +47,8 @@ export default function BundleDetailScreen() {
   const [showAddItem, setShowAddItem] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const [confetti, setConfetti] = useState({ trigger: false, x: 0, y: 0 });
+  const { status: priceStatus, search: searchPrices } = usePriceFinder();
+  const isSearching = priceStatus === 'requesting_location' || priceStatus === 'searching';
 
   const handleComplete = (x: number, y: number) => {
     setConfetti({ trigger: false, x, y });
@@ -189,16 +194,41 @@ export default function BundleDetailScreen() {
         )}
       </ScrollView>
 
-      {/* Floating add button */}
+      {/* Bottom action row — only when not adding an item */}
       {!showAddItem && (
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => setShowAddItem(true)}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="add" size={28} color={colors.primary.contrast} />
-        </TouchableOpacity>
+        <View style={styles.bottomRow}>
+          <View style={styles.bottomLeft}>
+            {items.length > 0 && (
+              <TouchableOpacity
+                style={styles.cheapestBtn}
+                onPress={() => searchPrices(items.map((i) => i.text), id as string)}
+                activeOpacity={0.85}
+                disabled={isSearching}
+              >
+                <Ionicons name="storefront-outline" size={16} color={colors.primary.dark} />
+                <Text style={styles.cheapestBtnText}>חנות הכי זולה</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={() => setShowAddItem(true)}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="add" size={28} color={colors.primary.contrast} />
+          </TouchableOpacity>
+        </View>
       )}
+
+      {/* Searching overlay */}
+      <Modal transparent visible={isSearching} animationType="fade">
+        <View style={styles.searchingOverlay}>
+          <View style={styles.searchingCard}>
+            <ActivityIndicator size="large" color={colors.primary.dark} />
+            <Text style={styles.searchingText}>מחפש מחירים...</Text>
+          </View>
+        </View>
+      </Modal>
 
       {/* Input bar — appears above keyboard when adding */}
       {showAddItem && (
@@ -348,10 +378,39 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     marginBottom: 8,
   },
-  fab: {
+  bottomRow: {
     position: 'absolute',
     bottom: 32,
+    left: 24,
     right: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bottomLeft: {
+    flex: 1,
+  },
+  cheapestBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.background.card,
+    borderWidth: 1.5,
+    borderColor: colors.primary.main,
+    borderRadius: 28,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cheapestBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.primary.dark,
+  },
+  fab: {
     width: 56,
     height: 56,
     borderRadius: 28,
@@ -363,6 +422,30 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 8,
     elevation: 6,
+  },
+  searchingOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchingCard: {
+    backgroundColor: colors.background.card,
+    borderRadius: 20,
+    paddingHorizontal: 36,
+    paddingVertical: 28,
+    alignItems: 'center',
+    gap: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  searchingText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text.primary,
   },
   addBar: {
     flexDirection: 'row',
