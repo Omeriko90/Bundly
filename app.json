@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "bundly-temp",
-    "slug": "bundly-temp",
+    "name": "Bundly",
+    "slug": "bundly",
     "scheme": "bundly",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -14,7 +14,9 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bundly.app",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
