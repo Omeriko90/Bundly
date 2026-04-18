@@ -40,7 +40,8 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 DUMP_FOLDER = "dumps"
 OUTPUT_FOLDER = "outputs"
-BATCH_SIZE = 1000
+BATCH_SIZE = 5000
+
 
 # Israeli CBS municipality code → Hebrew city name
 # Used to decode the numeric city field in store XML files

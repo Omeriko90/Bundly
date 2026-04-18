@@ -213,7 +213,7 @@ function ItemBreakdown({ result }: { result: StoreResult }) {
               </Text>
             )}
           </View>
-          <Text style={[styles.breakdownPrice, !ip.price && styles.breakdownNotFound]}>
+          <Text style={[styles.breakdownPrice, ip.price == null && styles.breakdownNotFound]}>
             {ip.price != null ? `₪${ip.price.toFixed(2)}${ip.unit ? ` / ${ip.unit}` : ''}` : 'לא נמצא'}
           </Text>
         </View>
