@@ -14,6 +14,8 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors } from '../../constants/colors';
+import ItemRow from '../../components/ItemRow';
+import ConfettiBurst from '../../components/ConfettiBurst';
 
 const MOCK_BUNDLE = {
   id: '1',
@@ -41,6 +43,12 @@ export default function BundleDetailScreen() {
   const [newItem, setNewItem] = useState('');
   const [showAddItem, setShowAddItem] = useState(false);
   const inputRef = useRef<TextInput>(null);
+  const [confetti, setConfetti] = useState({ trigger: false, x: 0, y: 0 });
+
+  const handleComplete = (x: number, y: number) => {
+    setConfetti({ trigger: false, x, y });
+    setTimeout(() => setConfetti({ trigger: true, x, y }), 10);
+  };
 
   const toggleItem = (itemId: string) => {
     setItems((prev) =>
@@ -157,6 +165,7 @@ export default function BundleDetailScreen() {
                 item={item}
                 onToggle={() => toggleItem(item.id)}
                 onDelete={() => deleteItem(item.id)}
+                onComplete={handleComplete}
               />
             ))}
           </>
@@ -173,6 +182,7 @@ export default function BundleDetailScreen() {
                 item={item}
                 onToggle={() => toggleItem(item.id)}
                 onDelete={() => deleteItem(item.id)}
+                onComplete={handleComplete}
               />
             ))}
           </>
@@ -214,37 +224,8 @@ export default function BundleDetailScreen() {
           </View>
         </KeyboardAvoidingView>
       )}
-    </View>
-  );
-}
 
-function ItemRow({
-  item,
-  onToggle,
-  onDelete,
-}: {
-  item: { id: string; text: string; checked: boolean; addedBy: string };
-  onToggle: () => void;
-  onDelete: () => void;
-}) {
-  return (
-    <View style={itemStyles.row}>
-      <TouchableOpacity onPress={onToggle} style={itemStyles.checkbox}>
-        {item.checked ? (
-          <Ionicons name="checkmark-circle" size={24} color={colors.primary.dark} />
-        ) : (
-          <Ionicons name="ellipse-outline" size={24} color={colors.text.disabled} />
-        )}
-      </TouchableOpacity>
-      <View style={itemStyles.content}>
-        <Text style={[itemStyles.text, item.checked && itemStyles.textChecked]}>
-          {item.text}
-        </Text>
-        <Text style={itemStyles.meta}>Added by {item.addedBy}</Text>
-      </View>
-      <TouchableOpacity onPress={onDelete} style={itemStyles.deleteBtn}>
-        <Ionicons name="trash-outline" size={16} color={colors.text.disabled} />
-      </TouchableOpacity>
+      <ConfettiBurst trigger={confetti.trigger} x={confetti.x} y={confetti.y} />
     </View>
   );
 }
@@ -417,38 +398,3 @@ const styles = StyleSheet.create({
   },
 });
 
-const itemStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.background.card,
-    borderRadius: 12,
-    paddingRight: 12,
-    marginBottom: 6,
-    gap: 8,
-  },
-  checkbox: {
-    padding: 12,
-  },
-  content: {
-    flex: 1,
-    paddingVertical: 12,
-  },
-  text: {
-    fontSize: 15,
-    color: colors.text.primary,
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  textChecked: {
-    textDecorationLine: 'line-through',
-    color: colors.text.disabled,
-  },
-  meta: {
-    fontSize: 12,
-    color: colors.text.disabled,
-  },
-  deleteBtn: {
-    padding: 8,
-  },
-});
