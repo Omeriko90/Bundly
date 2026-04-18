@@ -143,16 +143,20 @@ for price_file in price_files:
     if chain_id not in seen_chains:
         seen_chains[chain_id] = chain_slug
 
-    # Upsert products
-    products = (
-        df[["itemcode", "itemname"]]
-        .drop_duplicates(subset=["itemcode"])
-        .rename(columns={"itemcode": "barcode", "itemname": "name"})
-        .dropna(subset=["name"])
-        .to_dict("records")
-    )
-    if products:
-        _batch_upsert("il_products", products)
+    # Upsert products — column name varies by chain
+    name_col = next((c for c in ["itemname", "item_name", "productname", "product_name"] if c in df.columns), None)
+    if name_col is None:
+        print(f"    ⚠ No item name column found in {price_file}, skipping product upsert. Columns: {list(df.columns)}")
+    else:
+        products = (
+            df[["itemcode", name_col]]
+            .drop_duplicates(subset=["itemcode"])
+            .rename(columns={"itemcode": "barcode", name_col: "name"})
+            .dropna(subset=["name"])
+            .to_dict("records")
+        )
+        if products:
+            _batch_upsert("il_products", products)
 
     # Upsert chain prices
     prices_df = (
