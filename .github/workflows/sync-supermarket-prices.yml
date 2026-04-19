@@ -2,7 +2,7 @@ name: Sync Israeli Supermarket Prices
 
 on:
   schedule:
-    - cron: '0 2 * * *'   # daily at 2am UTC (4am Israel time)
+    - cron: '0 1 * * *'   # daily at 1am UTC (4am Israel DST / 3am Israel standard)
   workflow_dispatch:        # allow manual trigger from GitHub Actions UI
 
 jobs:

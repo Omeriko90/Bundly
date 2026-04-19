@@ -144,7 +144,7 @@ for price_file in price_files:
         seen_chains[chain_id] = chain_slug
 
     # Upsert products — column name varies by chain
-    name_col = next((c for c in ["itemname", "item_name", "productname", "product_name"] if c in df.columns), None)
+    name_col = next((c for c in ["itemname", "itemnm", "item_name", "productname", "product_name"] if c in df.columns), None)
     if name_col is None:
         print(f"    ⚠ No item name column found in {price_file}, skipping product upsert. Columns: {list(df.columns)}")
     else:
@@ -165,6 +165,8 @@ for price_file in price_files:
         .assign(chain_id=chain_id)
     )
     prices_df = prices_df.rename(columns={"itemcode": "barcode", "itemprice": "price", "unitofmeasure": "unit"})
+    # Replace inf/-inf with NaN then convert NaN → None so JSON serialization doesn't crash
+    prices_df = prices_df.replace([float("inf"), float("-inf")], pd.NA).where(prices_df.notna(), other=None)
     chain_prices = prices_df.drop_duplicates(subset=["barcode", "chain_id"]).to_dict("records")
     if chain_prices:
         _batch_upsert("il_chain_prices", chain_prices)
