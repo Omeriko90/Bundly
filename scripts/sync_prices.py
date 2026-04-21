@@ -226,10 +226,24 @@ for store_file in store_files:
 
         df = df.dropna(subset=["storeid", "chain_id"])
 
-        # Ensure chain exists in il_chains before inserting stores (FK constraint)
-        chain_ids = df["chain_id"].dropna().unique().tolist()
-        for cid in chain_ids:
-            supabase.table("il_chains").upsert({"chain_id": cid}, ignore_duplicates=True).execute()
+        # Ensure chain exists in il_chains before inserting stores (FK constraint).
+        # Include chain_name from store file so we don't create nameless chain records.
+        # ignore_duplicates=True preserves names already written by price file processing.
+        chain_cols = ["chain_id"] + (["chainname"] if "chainname" in df.columns else [])
+        chains_df = (
+            df[chain_cols]
+            .dropna(subset=["chain_id"])
+            .drop_duplicates(subset=["chain_id"])
+        )
+        chains_to_ensure = [
+            {
+                "chain_id": row["chain_id"],
+                **({"chain_name": str(row["chainname"])} if "chainname" in chains_df.columns and pd.notna(row.get("chainname")) else {}),
+            }
+            for _, row in chains_df.iterrows()
+        ]
+        if chains_to_ensure:
+            supabase.table("il_chains").upsert(chains_to_ensure, ignore_duplicates=True).execute()
 
         store_rows = []
         for _, row in df.iterrows():

@@ -26,9 +26,14 @@ export default function SignUpScreen() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ email, password });
     setLoading(false);
-    if (error) Alert.alert('Error', error.message);
+    if (error) {
+      Alert.alert('Error', error.message);
+    } else if (data.session === null) {
+      // Email confirmation is enabled — user must verify before logging in
+      Alert.alert('Check your email', 'We sent a confirmation link to ' + email + '. Click it to activate your account.');
+    }
   };
 
   return (
