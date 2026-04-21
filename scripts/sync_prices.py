@@ -113,8 +113,6 @@ print("Step 3: Upserting prices…")
 price_files = glob.glob(f"{OUTPUT_FOLDER}/price_file_*.csv")
 print(f"  Found {len(price_files)} price file(s)")
 
-seen_chains: dict[str, str] = {}  # chain_id (str) → chain_name
-
 for price_file in price_files:
     print(f"  Processing {price_file}…")
     df = pd.read_csv(price_file, low_memory=False)
@@ -139,9 +137,6 @@ for price_file in price_files:
 
     # Chain name: derive from filename (e.g. price_file_rami_levy.csv → rami_levy)
     chain_slug = price_file.replace(f"{OUTPUT_FOLDER}/price_file_", "").replace(".csv", "")
-
-    if chain_id not in seen_chains:
-        seen_chains[chain_id] = chain_slug
 
     # Upsert products — column name varies by chain
     name_col = next((c for c in ["itemname", "itemnm", "item_name", "productname", "product_name"] if c in df.columns), None)
@@ -168,16 +163,11 @@ for price_file in price_files:
     # Replace inf/-inf with NaN then convert NaN → None so JSON serialization doesn't crash
     prices_df = prices_df.replace([float("inf"), float("-inf")], pd.NA).where(prices_df.notna(), other=None)
     chain_prices = prices_df.drop_duplicates(subset=["barcode", "chain_id"]).to_dict("records")
+    # Upsert chain metadata before prices (FK constraint requires parent row first)
+    _batch_upsert("il_chains", [{"chain_id": chain_id, "chain_name": chain_slug}])
+
     if chain_prices:
         _batch_upsert("il_chain_prices", chain_prices)
-
-# Upsert chain metadata
-if seen_chains:
-    chain_rows = [
-        {"chain_id": cid, "chain_name": name}
-        for cid, name in seen_chains.items()
-    ]
-    _batch_upsert("il_chains", chain_rows)
 
 # ---------------------------------------------------------------------------
 # Step 4: Upsert store locations
