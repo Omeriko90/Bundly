@@ -5,77 +5,42 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { colors } from '../../constants/colors';
+import { usePinnedBundles } from '../../hooks/usePinnedBundles';
+import { useActivityFeed } from '../../hooks/useActivityFeed';
 
-const ACTIVITY = [
-  {
-    id: '1',
-    user: 'Sarah',
-    action: 'added',
-    item: 'AirPods Pro',
-    bundle: 'Holiday Wishlist',
-    time: '2m ago',
-    avatar: 'S',
-    avatarColor: colors.secondary.purple,
-  },
-  {
-    id: '2',
-    user: 'James',
-    action: 'checked off',
-    item: 'Book flights',
-    bundle: 'Europe Trip',
-    time: '15m ago',
-    avatar: 'J',
-    avatarColor: colors.secondary.mint,
-  },
-  {
-    id: '3',
-    user: 'You',
-    action: 'created bundle',
-    item: '',
-    bundle: 'Grocery Run',
-    time: '1h ago',
-    avatar: 'Y',
-    avatarColor: colors.primary.main,
-  },
-  {
-    id: '4',
-    user: 'Mia',
-    action: 'joined',
-    item: '',
-    bundle: 'Europe Trip',
-    time: '3h ago',
-    avatar: 'M',
-    avatarColor: colors.secondary.peach,
-  },
-  {
-    id: '5',
-    user: 'James',
-    action: 'added',
-    item: 'Sunscreen SPF 50',
-    bundle: 'Europe Trip',
-    time: '5h ago',
-    avatar: 'J',
-    avatarColor: colors.secondary.mint,
-  },
-];
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning 👋';
+  if (hour < 18) return 'Good afternoon 👋';
+  return 'Good evening 👋';
+}
 
-const PINNED = [
-  { id: '1', name: 'Holiday Wishlist', items: 12, members: 3, color: colors.secondary.purple },
-  { id: '2', name: 'Europe Trip', items: 8, members: 4, color: colors.secondary.mint },
-];
+function timeAgo(isoString: string): string {
+  const diff = Date.now() - new Date(isoString).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
 
 export default function HomeScreen() {
+  const { data: pinned = [], isLoading: pinnedLoading } = usePinnedBundles();
+  const { data: activity = [], isLoading: activityLoading } = useActivityFeed();
+
   return (
     <View style={styles.root}>
       <StatusBar style="dark" />
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Good morning 👋</Text>
+          <Text style={styles.greeting}>{getGreeting()}</Text>
           <Text style={styles.subtitle}>Here's what's happening</Text>
         </View>
         <TouchableOpacity
@@ -89,43 +54,55 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Pinned bundles */}
         <Text style={styles.sectionTitle}>Pinned Bundles</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pinnedRow}>
-          {PINNED.map((bundle) => (
-            <TouchableOpacity
-              key={bundle.id}
-              style={[styles.pinnedCard, { backgroundColor: bundle.color + '33' }]}
-              onPress={() => router.push(`/bundle/${bundle.id}`)}
-            >
-              <View style={[styles.pinnedDot, { backgroundColor: bundle.color }]} />
-              <Text style={styles.pinnedName}>{bundle.name}</Text>
-              <Text style={styles.pinnedMeta}>
-                {bundle.items} items · {bundle.members} members
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        {pinnedLoading ? (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator size="small" color={colors.primary.dark} />
+          </View>
+        ) : pinned.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pinnedRow}>
+            {pinned.map((bundle) => (
+              <TouchableOpacity
+                key={bundle.id}
+                style={[styles.pinnedCard, { backgroundColor: bundle.color + '33' }]}
+                onPress={() => router.push(`/bundle/${bundle.id}`)}
+              >
+                <View style={[styles.pinnedDot, { backgroundColor: bundle.color }]} />
+                <Text style={styles.pinnedName}>{bundle.name}</Text>
+                <Text style={styles.pinnedMeta}>
+                  {bundle.items} items · {bundle.members} members
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        ) : (
+          <Text style={styles.emptyHint}>Pin a bundle to see it here</Text>
+        )}
 
         {/* Activity feed */}
         <Text style={styles.sectionTitle}>Recent Activity</Text>
-        <View style={styles.feed}>
-          {ACTIVITY.map((a) => (
-            <View key={a.id} style={styles.activityItem}>
-              <View style={[styles.avatar, { backgroundColor: a.avatarColor + '33' }]}>
-                <Text style={[styles.avatarText, { color: a.avatarColor }]}>{a.avatar}</Text>
+        {activityLoading ? (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator size="small" color={colors.primary.dark} />
+          </View>
+        ) : activity.length > 0 ? (
+          <View style={styles.feed}>
+            {activity.map((a) => (
+              <View key={a.id} style={styles.activityItem}>
+                <View style={[styles.avatar, { backgroundColor: a.avatarColor + '33' }]}>
+                  <Text style={[styles.avatarText, { color: a.avatarColor }]}>
+                    {a.displayName[0].toUpperCase()}
+                  </Text>
+                </View>
+                <View style={styles.activityContent}>
+                  <Text style={styles.activityText}>{a.text}</Text>
+                  <Text style={styles.activityTime}>{timeAgo(a.createdAt)}</Text>
+                </View>
               </View>
-              <View style={styles.activityContent}>
-                <Text style={styles.activityText}>
-                  <Text style={styles.activityUser}>{a.user}</Text>
-                  {' '}{a.action}{a.item ? ' ' : ''}
-                  {a.item ? <Text style={styles.activityItem2}>"{a.item}"</Text> : null}
-                  {' '}in{' '}
-                  <Text style={styles.activityBundle}>{a.bundle}</Text>
-                </Text>
-                <Text style={styles.activityTime}>{a.time}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.emptyHint}>No recent activity</Text>
+        )}
       </ScrollView>
     </View>
   );
@@ -177,6 +154,16 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 12,
     paddingHorizontal: 24,
+  },
+  loadingRow: {
+    paddingHorizontal: 24,
+    paddingBottom: 8,
+  },
+  emptyHint: {
+    paddingHorizontal: 24,
+    fontSize: 13,
+    color: colors.text.disabled,
+    marginBottom: 8,
   },
   pinnedRow: {
     paddingLeft: 24,
@@ -235,16 +222,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text.primary,
     lineHeight: 20,
-  },
-  activityUser: {
-    fontWeight: '700',
-  },
-  activityItem2: {
-    fontStyle: 'italic',
-  },
-  activityBundle: {
-    color: colors.primary.dark,
-    fontWeight: '600',
   },
   activityTime: {
     fontSize: 12,

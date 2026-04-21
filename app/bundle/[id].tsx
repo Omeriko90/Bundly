@@ -19,30 +19,12 @@ import { colors } from '../../constants/colors';
 import ItemRow from '../../components/ItemRow';
 import ConfettiBurst from '../../components/ConfettiBurst';
 import { usePriceFinder } from '../../hooks/usePriceFinder';
-
-const MOCK_BUNDLE = {
-  id: '1',
-  name: 'Holiday Wishlist',
-  description: 'Things I want this holiday season',
-  color: colors.secondary.purple,
-  members: [
-    { id: '1', initial: 'Y', name: 'You', color: colors.primary.main },
-    { id: '2', initial: 'S', name: 'Sarah', color: colors.secondary.purple },
-    { id: '3', initial: 'J', name: 'James', color: colors.secondary.mint },
-  ],
-  items: [
-    { id: '1', text: 'AirPods Pro', checked: false, addedBy: 'Sarah' },
-    { id: '2', text: 'Kindle Paperwhite', checked: false, addedBy: 'You' },
-    { id: '3', text: 'Running shoes (Nike Pegasus)', checked: true, addedBy: 'You' },
-    { id: '4', text: 'Cozy blanket', checked: false, addedBy: 'James' },
-    { id: '5', text: 'Coffee subscription', checked: true, addedBy: 'Sarah' },
-    { id: '6', text: 'Board game (Catan)', checked: false, addedBy: 'You' },
-  ],
-};
+import { useBundle } from '../../hooks/useBundle';
+import { useBundleItems } from '../../hooks/useBundleItems';
+import { useMembers } from '../../hooks/useMembers';
 
 export default function BundleDetailScreen() {
-  const { id } = useLocalSearchParams();
-  const [items, setItems] = useState(MOCK_BUNDLE.items);
+  const { id } = useLocalSearchParams<{ id: string }>();
   const [newItem, setNewItem] = useState('');
   const [showAddItem, setShowAddItem] = useState(false);
   const inputRef = useRef<TextInput>(null);
@@ -50,32 +32,28 @@ export default function BundleDetailScreen() {
   const { status: priceStatus, search: searchPrices } = usePriceFinder();
   const isSearching = priceStatus === 'requesting_location' || priceStatus === 'searching';
 
+  const { data: bundle, isLoading: bundleLoading } = useBundle(id!);
+  const { items, isLoading: itemsLoading, toggleItem, addItem, deleteItem } = useBundleItems(id!);
+  const { data: members = [] } = useMembers(id!);
+  const isLoading = bundleLoading || itemsLoading;
+
   const handleComplete = (x: number, y: number) => {
     setConfetti({ trigger: false, x, y });
     setTimeout(() => setConfetti({ trigger: true, x, y }), 10);
   };
 
-  const toggleItem = (itemId: string) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === itemId ? { ...item, checked: !item.checked } : item
-      )
-    );
+  const handleToggle = (itemId: string) => {
+    toggleItem.mutate(itemId);
   };
 
-  const addItem = () => {
+  const handleAddItem = () => {
     if (!newItem.trim()) return;
-    setItems((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        text: newItem.trim(),
-        checked: false,
-        addedBy: 'You',
+    addItem.mutate(newItem.trim(), {
+      onSuccess: () => {
+        setNewItem('');
+        inputRef.current?.focus();
       },
-    ]);
-    setNewItem('');
-    inputRef.current?.focus();
+    });
   };
 
   const closeAddItem = () => {
@@ -83,13 +61,13 @@ export default function BundleDetailScreen() {
     setShowAddItem(false);
   };
 
-  const deleteItem = (itemId: string) => {
+  const handleDeleteItem = (itemId: string) => {
     Alert.alert('Delete Item', 'Remove this item from the bundle?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => setItems((prev) => prev.filter((i) => i.id !== itemId)),
+        onPress: () => deleteItem.mutate(itemId),
       },
     ]);
   };
@@ -97,6 +75,14 @@ export default function BundleDetailScreen() {
   const unchecked = items.filter((i) => !i.checked);
   const checked = items.filter((i) => i.checked);
   const progress = items.length > 0 ? checked.length / items.length : 0;
+
+  if (isLoading) {
+    return (
+      <View style={[styles.root, { alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary.dark} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.root}>
@@ -108,7 +94,7 @@ export default function BundleDetailScreen() {
           <Ionicons name="chevron-back" size={22} color={colors.text.primary} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle} numberOfLines={1}>{MOCK_BUNDLE.name}</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>{bundle?.name ?? ''}</Text>
         </View>
         <TouchableOpacity
           style={styles.inviteBtn}
@@ -132,15 +118,17 @@ export default function BundleDetailScreen() {
 
         {/* Members */}
         <View style={styles.membersRow}>
-          {MOCK_BUNDLE.members.map((m, i) => (
+          {members.map((m, i) => (
             <View
-              key={m.id}
+              key={m.userId}
               style={[
                 styles.memberAvatar,
-                { backgroundColor: m.color + '33', marginLeft: i > 0 ? -8 : 0 },
+                { backgroundColor: m.avatarColor + '33', marginLeft: i > 0 ? -8 : 0 },
               ]}
             >
-              <Text style={[styles.memberInitial, { color: m.color }]}>{m.initial}</Text>
+              <Text style={[styles.memberInitial, { color: m.avatarColor }]}>
+                {m.displayName[0].toUpperCase()}
+              </Text>
             </View>
           ))}
           <TouchableOpacity
@@ -150,7 +138,7 @@ export default function BundleDetailScreen() {
             <Ionicons name="add" size={14} color={colors.primary.dark} />
           </TouchableOpacity>
           <Text style={styles.membersLabel}>
-            {MOCK_BUNDLE.members.length} member{MOCK_BUNDLE.members.length !== 1 ? 's' : ''}
+            {members.length} member{members.length !== 1 ? 's' : ''}
           </Text>
         </View>
       </View>
@@ -168,8 +156,8 @@ export default function BundleDetailScreen() {
               <ItemRow
                 key={item.id}
                 item={item}
-                onToggle={() => toggleItem(item.id)}
-                onDelete={() => deleteItem(item.id)}
+                onToggle={() => handleToggle(item.id)}
+                onDelete={() => handleDeleteItem(item.id)}
                 onComplete={handleComplete}
               />
             ))}
@@ -185,8 +173,8 @@ export default function BundleDetailScreen() {
               <ItemRow
                 key={item.id}
                 item={item}
-                onToggle={() => toggleItem(item.id)}
-                onDelete={() => deleteItem(item.id)}
+                onToggle={() => handleToggle(item.id)}
+                onDelete={() => handleDeleteItem(item.id)}
                 onComplete={handleComplete}
               />
             ))}
@@ -243,9 +231,9 @@ export default function BundleDetailScreen() {
               style={styles.addBarInput}
               autoFocus
               returnKeyType="done"
-              onSubmitEditing={addItem}
+              onSubmitEditing={handleAddItem}
             />
-            <TouchableOpacity onPress={addItem} style={styles.addBarConfirm}>
+            <TouchableOpacity onPress={handleAddItem} style={styles.addBarConfirm}>
               <Ionicons name="checkmark" size={20} color={colors.primary.contrast} />
             </TouchableOpacity>
             <TouchableOpacity onPress={closeAddItem} style={styles.addBarCancel}>
@@ -480,4 +468,3 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
-

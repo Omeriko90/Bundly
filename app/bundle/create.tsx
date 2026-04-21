@@ -6,12 +6,14 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { colors } from '../../constants/colors';
 import ModalHeader from '../../components/ModalHeader';
+import { useCreateBundle } from '../../hooks/useCreateBundle';
 
 const COLOR_OPTIONS = [
   colors.secondary.purple,
@@ -40,13 +42,20 @@ export default function CreateBundleScreen() {
   const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0]);
   const [selectedIcon, setSelectedIcon] = useState(ICON_OPTIONS[0]);
   const [isPublic, setIsPublic] = useState(false);
+  const createBundle = useCreateBundle();
 
-  const canCreate = name.trim().length > 0;
+  const canCreate = name.trim().length > 0 && !createBundle.isPending;
 
   const handleCreate = () => {
-    if (!canCreate) return;
-    // TODO: create bundle in Supabase
-    router.back();
+    if (!name.trim()) return;
+    createBundle.mutate(
+      { name: name.trim(), description, color: selectedColor, icon: selectedIcon, is_public: isPublic },
+      {
+        onSuccess: (data) => {
+          router.replace(`/bundle/${data.id}`);
+        },
+      }
+    );
   };
 
   return (
@@ -61,7 +70,11 @@ export default function CreateBundleScreen() {
             onPress={handleCreate}
             disabled={!canCreate}
           >
-            <Text style={styles.createBtnText}>Create</Text>
+            {createBundle.isPending ? (
+              <ActivityIndicator size="small" color={colors.primary.contrast} />
+            ) : (
+              <Text style={styles.createBtnText}>Create</Text>
+            )}
           </TouchableOpacity>
         }
       />

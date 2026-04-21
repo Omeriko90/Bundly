@@ -7,30 +7,36 @@ import {
   ScrollView,
   StyleSheet,
   Share,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { colors } from '../../../constants/colors';
 import ModalHeader from '../../../components/ModalHeader';
-
-const CURRENT_MEMBERS = [
-  { id: '1', name: 'You', email: 'you@example.com', initial: 'Y', color: colors.primary.main, role: 'owner' },
-  { id: '2', name: 'Sarah', email: 'sarah@example.com', initial: 'S', color: colors.secondary.purple, role: 'member' },
-  { id: '3', name: 'James', email: 'james@example.com', initial: 'J', color: colors.secondary.mint, role: 'member' },
-];
+import { useMembers } from '../../../hooks/useMembers';
+import { useInviteMembers } from '../../../hooks/useInviteMembers';
 
 export default function InviteScreen() {
-  const { id } = useLocalSearchParams();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const [email, setEmail] = useState('');
   const [inviteSent, setInviteSent] = useState(false);
 
+  const { data: members = [], isLoading } = useMembers(id!);
+  const inviteMutation = useInviteMembers(id!);
+
   const handleInvite = () => {
     if (!email.trim()) return;
-    // TODO: send invite via Supabase
-    setInviteSent(true);
-    setEmail('');
-    setTimeout(() => setInviteSent(false), 3000);
+    inviteMutation.mutate(
+      { email: email.trim() },
+      {
+        onSuccess: () => {
+          setInviteSent(true);
+          setEmail('');
+          setTimeout(() => setInviteSent(false), 3000);
+        },
+      }
+    );
   };
 
   const handleShareLink = async () => {
@@ -76,11 +82,15 @@ export default function InviteScreen() {
               style={styles.emailInput}
             />
             <TouchableOpacity
-              style={[styles.sendBtn, !email.trim() && styles.sendBtnDisabled]}
+              style={[styles.sendBtn, (!email.trim() || inviteMutation.isPending) && styles.sendBtnDisabled]}
               onPress={handleInvite}
-              disabled={!email.trim()}
+              disabled={!email.trim() || inviteMutation.isPending}
             >
-              <Text style={styles.sendBtnText}>Send</Text>
+              {inviteMutation.isPending ? (
+                <ActivityIndicator size="small" color={colors.primary.contrast} />
+              ) : (
+                <Text style={styles.sendBtnText}>Send</Text>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -94,44 +104,47 @@ export default function InviteScreen() {
 
         {/* Current members */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Members ({CURRENT_MEMBERS.length})</Text>
-          <View style={styles.membersList}>
-            {CURRENT_MEMBERS.map((member, i) => (
-              <View
-                key={member.id}
-                style={[
-                  styles.memberRow,
-                  i < CURRENT_MEMBERS.length - 1 && styles.memberBorder,
-                ]}
-              >
-                <View style={[styles.avatar, { backgroundColor: member.color + '33' }]}>
-                  <Text style={[styles.avatarText, { color: member.color }]}>
-                    {member.initial}
-                  </Text>
-                </View>
-                <View style={styles.memberInfo}>
-                  <Text style={styles.memberName}>{member.name}</Text>
-                  <Text style={styles.memberEmail}>{member.email}</Text>
-                </View>
-                <View style={[
-                  styles.roleBadge,
-                  member.role === 'owner' && styles.roleBadgeOwner,
-                ]}>
-                  <Text style={[
-                    styles.roleText,
-                    member.role === 'owner' && styles.roleTextOwner,
+          <Text style={styles.sectionTitle}>Members ({members.length})</Text>
+          {isLoading ? (
+            <ActivityIndicator size="small" color={colors.primary.dark} />
+          ) : (
+            <View style={styles.membersList}>
+              {members.map((member, i) => (
+                <View
+                  key={member.userId}
+                  style={[
+                    styles.memberRow,
+                    i < members.length - 1 && styles.memberBorder,
+                  ]}
+                >
+                  <View style={[styles.avatar, { backgroundColor: member.avatarColor + '33' }]}>
+                    <Text style={[styles.avatarText, { color: member.avatarColor }]}>
+                      {member.displayName[0].toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.memberInfo}>
+                    <Text style={styles.memberName}>{member.displayName}</Text>
+                  </View>
+                  <View style={[
+                    styles.roleBadge,
+                    member.role === 'owner' && styles.roleBadgeOwner,
                   ]}>
-                    {member.role === 'owner' ? 'Owner' : 'Member'}
-                  </Text>
+                    <Text style={[
+                      styles.roleText,
+                      member.role === 'owner' && styles.roleTextOwner,
+                    ]}>
+                      {member.role === 'owner' ? 'Owner' : 'Member'}
+                    </Text>
+                  </View>
+                  {member.role !== 'owner' && (
+                    <TouchableOpacity style={styles.removeBtn}>
+                      <Ionicons name="remove-circle-outline" size={20} color={colors.error.text} />
+                    </TouchableOpacity>
+                  )}
                 </View>
-                {member.role !== 'owner' && (
-                  <TouchableOpacity style={styles.removeBtn}>
-                    <Ionicons name="remove-circle-outline" size={20} color={colors.error.text} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))}
-          </View>
+              ))}
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -209,6 +222,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 20,
     justifyContent: 'center',
+    minWidth: 64,
+    alignItems: 'center',
   },
   sendBtnDisabled: {
     opacity: 0.4,
@@ -269,11 +284,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: colors.text.primary,
-    marginBottom: 1,
-  },
-  memberEmail: {
-    fontSize: 12,
-    color: colors.text.secondary,
   },
   roleBadge: {
     paddingHorizontal: 10,

@@ -99,6 +99,14 @@ export interface NotificationPreferences {
 // Supabase Database type (for createClient generic)
 // ────────────────────────────────────────────────────────────
 
+type Relationship = {
+  foreignKeyName: string;
+  columns: string[];
+  isOneToOne: boolean;
+  referencedRelation: string;
+  referencedColumns: string[];
+};
+
 export interface Database {
   public: {
     Tables: {
@@ -107,50 +115,60 @@ export interface Database {
         Insert: Omit<Profile, 'created_at' | 'updated_at'> &
           Partial<Pick<Profile, 'created_at' | 'updated_at'>>;
         Update: Partial<Omit<Profile, 'id'>>;
+        Relationships: Relationship[];
       };
       bundles: {
         Row: Bundle;
         Insert: Omit<Bundle, 'id' | 'created_at' | 'updated_at'> &
           Partial<Pick<Bundle, 'id' | 'created_at' | 'updated_at'>>;
         Update: Partial<Omit<Bundle, 'id'>>;
+        Relationships: Relationship[];
       };
       bundle_members: {
         Row: BundleMember;
         Insert: Omit<BundleMember, 'id' | 'joined_at'> &
           Partial<Pick<BundleMember, 'id' | 'joined_at'>>;
         Update: Partial<Omit<BundleMember, 'id' | 'bundle_id' | 'user_id'>>;
+        Relationships: Relationship[];
       };
       bundle_items: {
         Row: BundleItem;
         Insert: Omit<BundleItem, 'id' | 'created_at' | 'updated_at'> &
           Partial<Pick<BundleItem, 'id' | 'created_at' | 'updated_at'>>;
         Update: Partial<Omit<BundleItem, 'id'>>;
+        Relationships: Relationship[];
       };
       bundle_invitations: {
         Row: BundleInvitation;
         Insert: Omit<BundleInvitation, 'id' | 'created_at'> &
           Partial<Pick<BundleInvitation, 'id' | 'created_at'>>;
         Update: Partial<Omit<BundleInvitation, 'id'>>;
+        Relationships: Relationship[];
       };
       activity_feed: {
         Row: ActivityFeedItem;
         Insert: Omit<ActivityFeedItem, 'id' | 'created_at'> &
           Partial<Pick<ActivityFeedItem, 'id' | 'created_at'>>;
-        Update: never;
+        Update: Partial<Omit<ActivityFeedItem, 'id'>>;
+        Relationships: Relationship[];
       };
       notification_preferences: {
         Row: NotificationPreferences;
         Insert: Pick<NotificationPreferences, 'user_id'> &
           Partial<Omit<NotificationPreferences, 'user_id'>>;
         Update: Partial<Omit<NotificationPreferences, 'user_id'>>;
+        Relationships: Relationship[];
       };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
     Enums: {
       bundle_type: BundleType;
       member_role: MemberRole;
       invite_status: InviteStatus;
       activity_event: ActivityEvent;
     };
+    CompositeTypes: Record<never, never>;
   };
 }
 

@@ -6,18 +6,14 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { colors } from '../../constants/colors';
-
-const STATS = [
-  { label: 'Bundles', value: '4' },
-  { label: 'Items', value: '46' },
-  { label: 'Completed', value: '17' },
-];
+import { useProfile } from '../../hooks/useProfile';
 
 const MENU_SECTIONS = [
   {
@@ -46,6 +42,8 @@ const MENU_SECTIONS = [
 ];
 
 export default function ProfileScreen() {
+  const { data: profile, isLoading } = useProfile();
+
   const handleSignOut = async () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -60,6 +58,16 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const avatarInitial = profile?.display_name?.[0]?.toUpperCase() ?? '?';
+  const avatarBg = profile?.avatar_color ? profile.avatar_color + '33' : colors.primary.main + '33';
+  const avatarColor = profile?.avatar_color ?? colors.primary.dark;
+
+  const stats = [
+    { label: 'Bundles', value: String(profile?.bundleCount ?? 0) },
+    { label: 'Items', value: String(profile?.itemCount ?? 0) },
+    { label: 'Completed', value: String(profile?.completedCount ?? 0) },
+  ];
+
   return (
     <View style={styles.root}>
       <StatusBar style="dark" />
@@ -73,11 +81,17 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Avatar & name */}
         <View style={styles.profileSection}>
-          <View style={styles.avatarLarge}>
-            <Text style={styles.avatarLargeText}>Y</Text>
-          </View>
-          <Text style={styles.name}>Your Name</Text>
-          <Text style={styles.email}>you@example.com</Text>
+          {isLoading ? (
+            <ActivityIndicator size="large" color={colors.primary.dark} style={{ marginVertical: 24 }} />
+          ) : (
+            <>
+              <View style={[styles.avatarLarge, { backgroundColor: avatarBg }]}>
+                <Text style={[styles.avatarLargeText, { color: avatarColor }]}>{avatarInitial}</Text>
+              </View>
+              <Text style={styles.name}>{profile?.display_name || 'Your Name'}</Text>
+              <Text style={styles.email}>{profile?.email || ''}</Text>
+            </>
+          )}
           <TouchableOpacity style={styles.editProfileBtn}>
             <Text style={styles.editProfileBtnText}>Edit Profile</Text>
           </TouchableOpacity>
@@ -85,8 +99,8 @@ export default function ProfileScreen() {
 
         {/* Stats */}
         <View style={styles.statsRow}>
-          {STATS.map((s, i) => (
-            <View key={s.label} style={[styles.statItem, i < STATS.length - 1 && styles.statBorder]}>
+          {stats.map((s, i) => (
+            <View key={s.label} style={[styles.statItem, i < stats.length - 1 && styles.statBorder]}>
               <Text style={styles.statValue}>{s.value}</Text>
               <Text style={styles.statLabel}>{s.label}</Text>
             </View>
@@ -163,7 +177,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: colors.primary.main + '33',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -171,7 +184,6 @@ const styles = StyleSheet.create({
   avatarLargeText: {
     fontSize: 32,
     fontWeight: '700',
-    color: colors.primary.dark,
   },
   name: {
     fontSize: 20,

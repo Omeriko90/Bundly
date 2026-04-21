@@ -6,74 +6,20 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { colors } from '../../constants/colors';
-
-const BUNDLES = [
-  {
-    id: '1',
-    name: 'Holiday Wishlist',
-    description: 'Things I want this holiday season',
-    items: 12,
-    checkedItems: 3,
-    members: [
-      { initial: 'S', color: colors.secondary.purple },
-      { initial: 'J', color: colors.secondary.mint },
-      { initial: 'M', color: colors.secondary.peach },
-    ],
-    color: colors.secondary.purple,
-    isOwner: true,
-  },
-  {
-    id: '2',
-    name: 'Europe Trip',
-    description: 'Packing list and to-dos for our trip',
-    items: 8,
-    checkedItems: 5,
-    members: [
-      { initial: 'J', color: colors.secondary.mint },
-      { initial: 'M', color: colors.secondary.peach },
-      { initial: 'Y', color: colors.primary.main },
-      { initial: 'L', color: colors.secondary.purple },
-    ],
-    color: colors.secondary.mint,
-    isOwner: false,
-  },
-  {
-    id: '3',
-    name: 'Grocery Run',
-    description: 'Weekly groceries',
-    items: 6,
-    checkedItems: 0,
-    members: [
-      { initial: 'Y', color: colors.primary.main },
-    ],
-    color: colors.secondary.peach,
-    isOwner: true,
-  },
-  {
-    id: '4',
-    name: 'Home Renovation',
-    description: 'Items to buy for the new place',
-    items: 20,
-    checkedItems: 9,
-    members: [
-      { initial: 'Y', color: colors.primary.main },
-      { initial: 'S', color: colors.secondary.purple },
-    ],
-    color: colors.primary.light,
-    isOwner: true,
-  },
-];
+import { useBundles } from '../../hooks/useBundles';
 
 export default function BundlesScreen() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'mine' | 'shared'>('all');
+  const { data: bundles = [], isLoading } = useBundles();
 
-  const filtered = BUNDLES.filter((b) => {
+  const filtered = bundles.filter((b) => {
     const matchesSearch = b.name.toLowerCase().includes(search.toLowerCase());
     const matchesFilter =
       filter === 'all' ||
@@ -122,67 +68,73 @@ export default function BundlesScreen() {
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {filtered.map((bundle) => {
-          const progress = bundle.items > 0 ? bundle.checkedItems / bundle.items : 0;
-          return (
-            <TouchableOpacity
-              key={bundle.id}
-              style={styles.card}
-              onPress={() => router.push(`/bundle/${bundle.id}`)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.cardTop}>
-                <View style={[styles.colorDot, { backgroundColor: bundle.color }]} />
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardName}>{bundle.name}</Text>
-                  <Text style={styles.cardDesc} numberOfLines={1}>{bundle.description}</Text>
-                </View>
-                {!bundle.isOwner && (
-                  <View style={styles.sharedBadge}>
-                    <Text style={styles.sharedBadgeText}>Shared</Text>
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary.dark} />
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          {filtered.map((bundle) => {
+            const progress = bundle.items > 0 ? bundle.checkedItems / bundle.items : 0;
+            return (
+              <TouchableOpacity
+                key={bundle.id}
+                style={styles.card}
+                onPress={() => router.push(`/bundle/${bundle.id}`)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.cardTop}>
+                  <View style={[styles.colorDot, { backgroundColor: bundle.color }]} />
+                  <View style={styles.cardInfo}>
+                    <Text style={styles.cardName}>{bundle.name}</Text>
+                    <Text style={styles.cardDesc} numberOfLines={1}>{bundle.description}</Text>
                   </View>
-                )}
-              </View>
-
-              <View style={styles.progressBarBg}>
-                <View style={[styles.progressBarFill, { width: `${progress * 100}%` as any }]} />
-              </View>
-
-              <View style={styles.cardBottom}>
-                <Text style={styles.cardMeta}>
-                  {bundle.checkedItems}/{bundle.items} items
-                </Text>
-                <View style={styles.members}>
-                  {bundle.members.slice(0, 3).map((m, i) => (
-                    <View
-                      key={i}
-                      style={[
-                        styles.memberAvatar,
-                        { backgroundColor: m.color + '33', marginLeft: i > 0 ? -8 : 0 },
-                      ]}
-                    >
-                      <Text style={[styles.memberInitial, { color: m.color }]}>{m.initial}</Text>
-                    </View>
-                  ))}
-                  {bundle.members.length > 3 && (
-                    <View style={[styles.memberAvatar, styles.memberMore, { marginLeft: -8 }]}>
-                      <Text style={styles.memberMoreText}>+{bundle.members.length - 3}</Text>
+                  {!bundle.isOwner && (
+                    <View style={styles.sharedBadge}>
+                      <Text style={styles.sharedBadgeText}>Shared</Text>
                     </View>
                   )}
                 </View>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
 
-        {filtered.length === 0 && (
-          <View style={styles.empty}>
-            <Ionicons name="layers-outline" size={48} color={colors.text.disabled} />
-            <Text style={styles.emptyText}>No bundles found</Text>
-          </View>
-        )}
-      </ScrollView>
+                <View style={styles.progressBarBg}>
+                  <View style={[styles.progressBarFill, { width: `${progress * 100}%` as any }]} />
+                </View>
+
+                <View style={styles.cardBottom}>
+                  <Text style={styles.cardMeta}>
+                    {bundle.checkedItems}/{bundle.items} items
+                  </Text>
+                  <View style={styles.members}>
+                    {bundle.members.slice(0, 3).map((m, i) => (
+                      <View
+                        key={i}
+                        style={[
+                          styles.memberAvatar,
+                          { backgroundColor: m.color + '33', marginLeft: i > 0 ? -8 : 0 },
+                        ]}
+                      >
+                        <Text style={[styles.memberInitial, { color: m.color }]}>{m.initial}</Text>
+                      </View>
+                    ))}
+                    {bundle.members.length > 3 && (
+                      <View style={[styles.memberAvatar, styles.memberMore, { marginLeft: -8 }]}>
+                        <Text style={styles.memberMoreText}>+{bundle.members.length - 3}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+
+          {!isLoading && filtered.length === 0 && (
+            <View style={styles.empty}>
+              <Ionicons name="layers-outline" size={48} color={colors.text.disabled} />
+              <Text style={styles.emptyText}>No bundles found</Text>
+            </View>
+          )}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -262,6 +214,11 @@ const styles = StyleSheet.create({
   },
   filterTextActive: {
     color: colors.primary.contrast,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scroll: {
     paddingHorizontal: 24,

@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
 import { Stack, router } from 'expo-router';
 import { addEventListener, getInitialURL, parse } from 'expo-linking';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { queryClient } from '../lib/queryClient';
 
 export default function RootLayout() {
   useEffect(() => {
@@ -37,14 +39,16 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="signup" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="bundle/create" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="bundle/[id]" />
-      <Stack.Screen name="bundle/[id]/invite" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="bundle/[id]/cheapest-store" options={{ presentation: 'modal' }} />
-    </Stack>
+    <QueryClientProvider client={queryClient}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="signup" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="bundle/create" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="bundle/[id]" />
+        <Stack.Screen name="bundle/[id]/invite" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="bundle/[id]/cheapest-store" options={{ presentation: 'modal' }} />
+      </Stack>
+    </QueryClientProvider>
   );
 }
