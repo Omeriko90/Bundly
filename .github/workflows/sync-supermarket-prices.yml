@@ -25,7 +25,7 @@ jobs:
           restore-keys: ${{ runner.os }}-pip-
 
       - name: Install dependencies
-        run: pip install il-supermarket-scraper il-supermarket-parser supabase pandas
+        run: pip install -r scripts/requirements.txt
 
       - name: Run price sync
         env:
