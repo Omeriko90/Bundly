@@ -8,7 +8,7 @@ export function useProfile() {
   const userId = useAuth();
 
   return useQuery({
-    ...profileKeys.byUser(userId!),
+    ...profileKeys.byUser(userId ?? ''),
     enabled: !!userId,
   });
 }

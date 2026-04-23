@@ -8,7 +8,7 @@ export function useActivityFeed() {
   const userId = useAuth();
 
   return useQuery({
-    ...activityFeedKeys.byUser(userId!),
+    ...activityFeedKeys.byUser(userId ?? ''),
     enabled: !!userId,
   });
 }

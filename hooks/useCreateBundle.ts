@@ -7,16 +7,23 @@ import { bundleKeys } from '../queries/keys';
 export function useCreateBundle() {
   const userId = useAuth();
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: (params: {
       name: string;
       description: string;
       color: string;
       icon: string;
       is_public: boolean;
-    }) => createBundle({ ...params, ownerId: userId! }),
+    }) => {
+      if (!userId) throw new Error('Not authenticated');
+      return createBundle({ ...params, ownerId: userId });
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: bundleKeys.list(userId!).queryKey });
+      if (userId) {
+        queryClient.invalidateQueries({ queryKey: bundleKeys.list(userId).queryKey });
+      }
     },
   });
+
+  return { ...mutation, isAuthReady: userId !== null };
 }

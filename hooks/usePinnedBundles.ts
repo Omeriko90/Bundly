@@ -8,7 +8,7 @@ export function usePinnedBundles() {
   const userId = useAuth();
 
   return useQuery({
-    ...pinnedBundlesKeys.byUser(userId!),
+    ...pinnedBundlesKeys.byUser(userId ?? ''),
     enabled: !!userId,
   });
 }

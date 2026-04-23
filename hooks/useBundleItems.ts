@@ -73,7 +73,8 @@ export function useBundleItems(bundleId: string) {
     mutationFn: async (text: string) => {
       const items = qc.getQueryData<BundleDetailItem[]>(bundleDetailKeys.items(bundleId).queryKey) ?? [];
       const nextPosition = items.reduce((m, i) => Math.max(m, i.position), 0) + 1;
-      const inserted = await insertBundleItem(bundleId, text, nextPosition, userId!);
+      if (!userId) throw new Error('Not authenticated');
+      const inserted = await insertBundleItem(bundleId, text, nextPosition, userId);
       if (userId) {
         const bundle = qc.getQueryData<BundleDetail>(bundleDetailKeys.detail(bundleId).queryKey);
         await logActivity(bundleId, userId, 'item_added', inserted.id, {

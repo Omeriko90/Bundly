@@ -44,7 +44,7 @@ export default function CreateBundleScreen() {
   const [isPublic, setIsPublic] = useState(false);
   const createBundle = useCreateBundle();
 
-  const canCreate = name.trim().length > 0 && !createBundle.isPending;
+  const canCreate = name.trim().length > 0 && !createBundle.isPending && createBundle.isAuthReady;
 
   const handleCreate = () => {
     if (!name.trim()) return;

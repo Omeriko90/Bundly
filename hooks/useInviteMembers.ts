@@ -7,11 +7,15 @@ import { bundleDetailKeys } from '../queries/keys';
 export function useInviteMembers(bundleId: string) {
   const userId = useAuth();
 
-  return useMutation({
-    mutationFn: ({ email }: { email: string }) =>
-      createInvitation({ bundleId, email, invitedBy: userId! }),
+  const mutation = useMutation({
+    mutationFn: ({ email }: { email: string }) => {
+      if (!userId) throw new Error('Not authenticated');
+      return createInvitation({ bundleId, email, invitedBy: userId });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: bundleDetailKeys.members(bundleId).queryKey });
     },
   });
+
+  return { ...mutation, isAuthReady: userId !== null };
 }
