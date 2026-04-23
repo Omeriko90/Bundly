@@ -17,7 +17,7 @@ import { useBundles } from '../../hooks/useBundles';
 export default function BundlesScreen() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'mine' | 'shared'>('all');
-  const { data: bundles = [], isLoading } = useBundles();
+  const { data: bundles = [], isLoading, error } = useBundles();
 
   const filtered = bundles.filter((b) => {
     const matchesSearch = b.name.toLowerCase().includes(search.toLowerCase());
@@ -71,6 +71,10 @@ export default function BundlesScreen() {
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary.dark} />
+        </View>
+      ) : error ? (
+        <View style={styles.loadingContainer}>
+          <Text style={{ color: 'red', textAlign: 'center', padding: 24 }}>{String(error)}</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>

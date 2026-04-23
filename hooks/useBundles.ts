@@ -8,7 +8,7 @@ export function useBundles() {
   const userId = useAuth();
 
   return useQuery({
-    ...bundleKeys.list(userId ?? ''),
+    ...bundleKeys.list(userId ?? undefined),
     enabled: !!userId,
   });
 }

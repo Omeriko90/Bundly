@@ -53,6 +53,14 @@ export async function fetchBundles(userId: string): Promise<BundleListItem[]> {
   });
 }
 
+function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export async function createBundle(params: {
   name: string;
   description: string;
@@ -62,9 +70,11 @@ export async function createBundle(params: {
   ownerId: string;
 }): Promise<{ id: string; name: string }> {
   const db = supabase as any;
-  const { data, error } = await db
+  const id = generateUUID();
+  const { error } = await db
     .from('bundles')
     .insert({
+      id,
       name: params.name,
       description: params.description,
       color: params.color,
@@ -73,9 +83,7 @@ export async function createBundle(params: {
       owner_id: params.ownerId,
       type: 'checklist',
       share_token: null,
-    })
-    .select()
-    .single();
+    });
   if (error) throw error;
-  return data as { id: string; name: string };
+  return { id, name: params.name };
 }

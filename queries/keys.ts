@@ -8,9 +8,9 @@ import { fetchProfile } from './profile';
 import { fetchMembers } from './members';
 
 export const bundleKeys = createQueryKeys('bundles', {
-  list: (userId: string) => ({
+  list: (userId: string | undefined) => ({
     queryKey: [userId],
-    queryFn: () => fetchBundles(userId),
+    queryFn: () => fetchBundles(userId!),
   }),
 });
 
@@ -30,22 +30,22 @@ export const bundleDetailKeys = createQueryKeys('bundle', {
 });
 
 export const pinnedBundlesKeys = createQueryKeys('pinned-bundles', {
-  byUser: (userId: string) => ({
+  byUser: (userId: string | undefined) => ({
     queryKey: [userId],
-    queryFn: () => fetchPinnedBundles(userId),
+    queryFn: () => fetchPinnedBundles(userId!),
   }),
 });
 
 export const activityFeedKeys = createQueryKeys('activity-feed', {
-  byUser: (userId: string) => ({
+  byUser: (userId: string | undefined) => ({
     queryKey: [userId],
-    queryFn: () => fetchActivityFeed(userId),
+    queryFn: () => fetchActivityFeed(userId!),
   }),
 });
 
 export const profileKeys = createQueryKeys('profile', {
-  byUser: (userId: string) => ({
+  byUser: (userId: string | undefined) => ({
     queryKey: [userId],
-    queryFn: () => fetchProfile(userId),
+    queryFn: () => fetchProfile(userId!),
   }),
 });
