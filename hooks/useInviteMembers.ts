@@ -11,7 +11,7 @@ export function useInviteMembers(bundleId: string) {
     mutationFn: ({ email }: { email: string }) =>
       createInvitation({ bundleId, email, invitedBy: userId! }),
     onSuccess: () => {
-      queryClient.invalidateQueries(bundleDetailKeys.members(bundleId));
+      queryClient.invalidateQueries({ queryKey: bundleDetailKeys.members(bundleId).queryKey });
     },
   });
 }

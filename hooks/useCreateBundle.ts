@@ -16,7 +16,7 @@ export function useCreateBundle() {
       is_public: boolean;
     }) => createBundle({ ...params, ownerId: userId! }),
     onSuccess: () => {
-      queryClient.invalidateQueries(bundleKeys.list(userId!));
+      queryClient.invalidateQueries({ queryKey: bundleKeys.list(userId!).queryKey });
     },
   });
 }

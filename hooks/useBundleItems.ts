@@ -31,7 +31,7 @@ export function useBundleItems(bundleId: string) {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'bundle_items', filter: `bundle_id=eq.${bundleId}` },
-        () => qc.invalidateQueries(bundleDetailKeys.items(bundleId)),
+        () => qc.invalidateQueries({ queryKey: bundleDetailKeys.items(bundleId).queryKey }),
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -53,7 +53,7 @@ export function useBundleItems(bundleId: string) {
       }
     },
     onMutate: async (itemId) => {
-      await qc.cancelQueries(bundleDetailKeys.items(bundleId));
+      await qc.cancelQueries({ queryKey: bundleDetailKeys.items(bundleId).queryKey });
       const prev = qc.getQueryData<BundleDetailItem[]>(bundleDetailKeys.items(bundleId).queryKey);
       qc.setQueryData<BundleDetailItem[]>(
         bundleDetailKeys.items(bundleId).queryKey,
@@ -66,7 +66,7 @@ export function useBundleItems(bundleId: string) {
         qc.setQueryData(bundleDetailKeys.items(bundleId).queryKey, context.prev);
       }
     },
-    onSuccess: () => qc.invalidateQueries(bundleDetailKeys.items(bundleId)),
+    onSuccess: () => qc.invalidateQueries({ queryKey: bundleDetailKeys.items(bundleId).queryKey }),
   });
 
   const addItem = useMutation({
@@ -82,7 +82,7 @@ export function useBundleItems(bundleId: string) {
         });
       }
     },
-    onSuccess: () => qc.invalidateQueries(bundleDetailKeys.items(bundleId)),
+    onSuccess: () => qc.invalidateQueries({ queryKey: bundleDetailKeys.items(bundleId).queryKey }),
   });
 
   const deleteItem = useMutation({
@@ -98,7 +98,7 @@ export function useBundleItems(bundleId: string) {
         });
       }
     },
-    onSuccess: () => qc.invalidateQueries(bundleDetailKeys.items(bundleId)),
+    onSuccess: () => qc.invalidateQueries({ queryKey: bundleDetailKeys.items(bundleId).queryKey }),
   });
 
   return {

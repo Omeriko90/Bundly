@@ -17,8 +17,8 @@ function formatActivity(entry: {
   profile: { display_name: string; avatar_color: string } | null;
 }): string {
   const name = entry.profile?.display_name ?? 'Someone';
-  const itemText = entry.metadata?.item_text as string | undefined;
-  const bundleName = entry.metadata?.bundle_name as string | undefined;
+  const itemText = (entry.metadata?.item_text as string | undefined) ?? 'an item';
+  const bundleName = (entry.metadata?.bundle_name as string | undefined) ?? 'a bundle';
 
   switch (entry.event_type) {
     case 'item_added':
