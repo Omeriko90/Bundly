@@ -52,10 +52,17 @@ CITY_CODES: dict[str, str] = json.loads(
 
 
 def resolve_city(code) -> str | None:
-    """Convert a CBS city code (int or float string) to a Hebrew city name."""
+    """Convert a CBS city code (int or float string) to a Hebrew city name.
+    If the value is already a text city name (not numeric), return it as-is."""
     if code is None or (isinstance(code, float) and pd.isna(code)):
         return None
-    return CITY_CODES.get(str(int(float(code))), None)
+    code_str = str(code).strip()
+    if not code_str or code_str.lower() in ("nan", "none", "0.0", "0"):
+        return None
+    try:
+        return CITY_CODES.get(str(int(float(code_str))), code_str)
+    except (ValueError, TypeError):
+        return code_str
 
 
 def _batch_upsert(table: str, rows: list[dict]) -> None:
@@ -252,7 +259,7 @@ for store_file in store_files:
             except (ValueError, TypeError):
                 print(f"    ⚠ Invalid storeid value '{row.get('storeid')}', skipping row.")
                 continue
-            city = row.get("city_name") or (str(int(float(row["city"]))) if pd.notna(row.get("city")) else None)
+            city = row.get("city_name") or resolve_city(row.get("city"))
             store_rows.append({
                 "store_id":   store_id,
                 "chain_id":   row["chain_id"],
@@ -261,8 +268,10 @@ for store_file in store_files:
                 "store_name": str(row["storename"]) if pd.notna(row.get("storename")) else None,
             })
 
-        if store_rows:
-            _batch_upsert("il_stores", store_rows)
+        # Deduplicate by store_id — some chains emit the same store twice in one file
+        store_rows_dedup = list({s["store_id"]: s for s in store_rows}.values())
+        if store_rows_dedup:
+            _batch_upsert("il_stores", store_rows_dedup)
 
     except Exception as exc:
         print(f"    ✗ Failed processing {store_file}: {exc}")
