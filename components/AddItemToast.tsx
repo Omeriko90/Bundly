@@ -4,11 +4,13 @@ import { colors } from '../constants/colors';
 
 type Props = {
   visible: boolean;
+  prefix?: string;
   itemText: string;
-  onUndo: () => void;
+  actionLabel?: string;
+  onAction?: () => void;
 };
 
-export default function AddItemToast({ visible, itemText, onUndo }: Props) {
+export default function AddItemToast({ visible, prefix = 'Added', itemText, actionLabel, onAction = () => {} }: Props) {
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(16)).current;
 
@@ -29,12 +31,16 @@ export default function AddItemToast({ visible, itemText, onUndo }: Props) {
   return (
     <Animated.View style={[styles.container, { opacity, transform: [{ translateY }] }]} pointerEvents={visible ? 'auto' : 'none'}>
       <Text style={styles.text} numberOfLines={1}>
-        Added <Text style={styles.bold}>{itemText}</Text>
+        {prefix} <Text style={styles.bold}>{itemText}</Text>
       </Text>
-      <View style={styles.divider} />
-      <TouchableOpacity onPress={onUndo} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-        <Text style={styles.undo}>Undo</Text>
-      </TouchableOpacity>
+      {actionLabel && (
+        <>
+          <View style={styles.divider} />
+          <TouchableOpacity onPress={onAction} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Text style={styles.action}>{actionLabel}</Text>
+          </TouchableOpacity>
+        </>
+      )}
     </Animated.View>
   );
 }
@@ -71,7 +77,7 @@ const styles = StyleSheet.create({
     height: 16,
     backgroundColor: 'rgba(255,255,255,0.25)',
   },
-  undo: {
+  action: {
     fontSize: 14,
     fontWeight: '700',
     color: colors.primary.light,
