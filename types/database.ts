@@ -59,6 +59,7 @@ export interface BundleItem {
   checked_at: string | null;
   position: number;
   added_by: string;
+  barcode: string | null;
   created_at: string;
   updated_at: string;
 }
