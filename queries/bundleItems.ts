@@ -6,13 +6,14 @@ export type BundleDetailItem = {
   checked: boolean;
   position: number;
   addedBy: string;
+  barcode?: string | null;
 };
 
 export async function fetchBundleItems(bundleId: string): Promise<BundleDetailItem[]> {
   const db = supabase as any;
   const { data, error } = await db
     .from('bundle_items')
-    .select('id, text, checked, position, added_by_profile:profiles!added_by(display_name)')
+    .select('id, text, checked, position, barcode, added_by_profile:profiles!added_by(display_name)')
     .eq('bundle_id', bundleId)
     .order('position');
   if (error) throw error;
@@ -22,6 +23,7 @@ export async function fetchBundleItems(bundleId: string): Promise<BundleDetailIt
     text: item.text,
     checked: item.checked,
     position: item.position,
+    barcode: item.barcode ?? null,
     addedBy: item.added_by_profile?.display_name ?? 'Unknown',
   }));
 }
@@ -48,11 +50,12 @@ export async function insertBundleItem(
   text: string,
   position: number,
   addedBy: string,
+  barcode?: string | null,
 ): Promise<{ id: string }> {
   const db = supabase as any;
   const { data, error } = await db
     .from('bundle_items')
-    .insert({ bundle_id: bundleId, text, checked: false, position, added_by: addedBy })
+    .insert({ bundle_id: bundleId, text, checked: false, position, added_by: addedBy, barcode: barcode ?? null })
     .select('id')
     .single();
   if (error) throw error;

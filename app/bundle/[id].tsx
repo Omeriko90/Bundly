@@ -7,8 +7,6 @@ import {
   TextInput,
   StyleSheet,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   Modal,
   ActivityIndicator,
 } from 'react-native';
@@ -22,12 +20,22 @@ import { usePriceFinder } from '../../hooks/usePriceFinder';
 import { useBundle } from '../../hooks/useBundle';
 import { useBundleItems } from '../../hooks/useBundleItems';
 import { useMembers } from '../../hooks/useMembers';
+import { useProductSearch } from '../../hooks/useProductSearch';
+import ProductSuggestions from '../../components/ProductSuggestions';
+import AddItemToast from '../../components/AddItemToast';
 
 export default function BundleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [newItem, setNewItem] = useState('');
+  const [selectedBarcode, setSelectedBarcode] = useState<string | null>(null);
   const [showAddItem, setShowAddItem] = useState(false);
+  const [overlayHeight, setOverlayHeight] = useState(0);
+  const [toast, setToast] = useState<{ visible: boolean; itemId: string | null; itemText: string }>({
+    visible: false, itemId: null, itemText: '',
+  });
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<TextInput>(null);
+  const { results: suggestions, isLoading: suggestionsLoading } = useProductSearch(showAddItem ? newItem : '');
   const [confetti, setConfetti] = useState({ trigger: false, x: 0, y: 0 });
   const { status: priceStatus, search: searchPrices } = usePriceFinder();
   const isSearching = priceStatus === 'requesting_location' || priceStatus === 'searching';
@@ -46,18 +54,50 @@ export default function BundleDetailScreen() {
     toggleItem.mutate(itemId);
   };
 
+  const handleNewItemChange = (text: string) => {
+    setNewItem(text);
+    if (selectedBarcode) setSelectedBarcode(null);
+  };
+
+  const showToast = (itemId: string, itemText: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ visible: true, itemId, itemText });
+    toastTimer.current = setTimeout(() => setToast((t) => ({ ...t, visible: false })), 3000);
+  };
+
+  const handleUndo = () => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast((t) => ({ ...t, visible: false }));
+    if (toast.itemId) deleteItem.mutate(toast.itemId);
+  };
+
+  const handleSuggestionSelect = (name: string, barcode: string) => {
+    setNewItem('');
+    setSelectedBarcode(null);
+    addItem.mutate({ text: name, barcode }, {
+      onSuccess: (inserted) => {
+        inputRef.current?.focus();
+        showToast(inserted.id, name);
+      },
+    });
+  };
+
   const handleAddItem = () => {
     if (!newItem.trim()) return;
-    addItem.mutate(newItem.trim(), {
-      onSuccess: () => {
+    const text = newItem.trim();
+    addItem.mutate({ text, barcode: selectedBarcode }, {
+      onSuccess: (inserted) => {
         setNewItem('');
+        setSelectedBarcode(null);
         inputRef.current?.focus();
+        showToast(inserted.id, text);
       },
     });
   };
 
   const closeAddItem = () => {
     setNewItem('');
+    setSelectedBarcode(null);
     setShowAddItem(false);
   };
 
@@ -143,12 +183,13 @@ export default function BundleDetailScreen() {
         </View>
       </View>
 
-      {/* List */}
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
+      {/* List + floating add-item overlay */}
+      <View style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={[styles.scroll, showAddItem && { paddingTop: overlayHeight + 8 }]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         {unchecked.length > 0 && (
           <>
             <Text style={styles.sectionLabel}>To Do</Text>
@@ -180,7 +221,34 @@ export default function BundleDetailScreen() {
             ))}
           </>
         )}
-      </ScrollView>
+        </ScrollView>
+
+        {/* Floating add-item input + dropdown */}
+        {showAddItem && (
+          <View style={styles.addBarOverlay} onLayout={(e) => setOverlayHeight(e.nativeEvent.layout.height)}>
+            <View style={styles.addBar}>
+              <TextInput
+                ref={inputRef}
+                value={newItem}
+                onChangeText={handleNewItemChange}
+                placeholder="Item name..."
+                placeholderTextColor={colors.text.disabled}
+                style={styles.addBarInput}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={handleAddItem}
+              />
+              <TouchableOpacity onPress={handleAddItem} style={styles.addBarConfirm}>
+                <Ionicons name="checkmark" size={20} color={colors.primary.contrast} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={closeAddItem} style={styles.addBarCancel}>
+                <Ionicons name="close" size={20} color={colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
+            <ProductSuggestions suggestions={suggestions} onSelect={handleSuggestionSelect} selectedBarcode={selectedBarcode} isLoading={suggestionsLoading} />
+          </View>
+        )}
+      </View>
 
       {/* Bottom action row — only when not adding an item */}
       {!showAddItem && (
@@ -218,31 +286,9 @@ export default function BundleDetailScreen() {
         </View>
       </Modal>
 
-      {/* Input bar — appears above keyboard when adding */}
-      {showAddItem && (
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View style={styles.addBar}>
-            <TextInput
-              ref={inputRef}
-              value={newItem}
-              onChangeText={setNewItem}
-              placeholder="Item name..."
-              placeholderTextColor={colors.text.disabled}
-              style={styles.addBarInput}
-              autoFocus
-              returnKeyType="done"
-              onSubmitEditing={handleAddItem}
-            />
-            <TouchableOpacity onPress={handleAddItem} style={styles.addBarConfirm}>
-              <Ionicons name="checkmark" size={20} color={colors.primary.contrast} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={closeAddItem} style={styles.addBarCancel}>
-              <Ionicons name="close" size={20} color={colors.text.secondary} />
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      )}
 
+
+      <AddItemToast visible={toast.visible} itemText={toast.itemText} onUndo={handleUndo} />
       <ConfettiBurst trigger={confetti.trigger} x={confetti.x} y={confetti.y} />
     </View>
   );
@@ -435,15 +481,30 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text.primary,
   },
+  addBarOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+  },
   addBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.background.card,
-    borderTopWidth: 1,
-    borderTopColor: colors.background.border,
+    borderWidth: 1,
+    borderColor: colors.background.border,
+    borderRadius: 14,
+    marginTop: 24,
+    marginHorizontal: 16,
     paddingHorizontal: 16,
     paddingVertical: 10,
     gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4,
   },
   addBarInput: {
     flex: 1,

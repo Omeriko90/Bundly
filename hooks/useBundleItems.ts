@@ -61,11 +61,11 @@ export function useBundleItems(bundleId: string) {
   });
 
   const addItem = useMutation({
-    mutationFn: async (text: string) => {
+    mutationFn: async ({ text, barcode }: { text: string; barcode?: string | null }) => {
       const items = qc.getQueryData<BundleDetailItem[]>(bundleDetailKeys.items(bundleId).queryKey) ?? [];
       const nextPosition = items.reduce((m, i) => Math.max(m, i.position), 0) + 1;
       if (!userId) throw new Error('Not authenticated');
-      const inserted = await insertBundleItem(bundleId, text, nextPosition, userId);
+      const inserted = await insertBundleItem(bundleId, text, nextPosition, userId, barcode);
       if (userId) {
         const bundle = qc.getQueryData<BundleDetail>(bundleDetailKeys.detail(bundleId).queryKey);
         await logActivity(bundleId, userId, 'item_added', inserted.id, {
@@ -73,6 +73,7 @@ export function useBundleItems(bundleId: string) {
           bundle_name: bundle?.name ?? '',
         });
       }
+      return inserted;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: bundleDetailKeys.items(bundleId).queryKey });
