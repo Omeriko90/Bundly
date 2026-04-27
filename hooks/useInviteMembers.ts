@@ -3,6 +3,7 @@ import { useAuth } from './useAuth';
 import { queryClient } from '../lib/queryClient';
 import { createInvitation } from '../queries/members';
 import { bundleDetailKeys } from '../queries/keys';
+import { broadcast } from '../lib/syncChannel';
 
 export function useInviteMembers(bundleId: string) {
   const userId = useAuth();
@@ -14,6 +15,7 @@ export function useInviteMembers(bundleId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: bundleDetailKeys.members(bundleId).queryKey });
+      if (userId) broadcast({ type: 'bundles_changed', userId });
     },
   });
 

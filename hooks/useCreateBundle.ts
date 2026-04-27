@@ -3,6 +3,7 @@ import { useAuth } from './useAuth';
 import { queryClient } from '../lib/queryClient';
 import { createBundle } from '../queries/bundles';
 import { bundleKeys } from '../queries/keys';
+import { broadcast } from '../lib/syncChannel';
 
 export function useCreateBundle() {
   const userId = useAuth();
@@ -22,6 +23,7 @@ export function useCreateBundle() {
       if (userId) {
         queryClient.invalidateQueries({ queryKey: bundleKeys.list(userId).queryKey });
       }
+      if (userId) broadcast({ type: 'bundles_changed', userId });
     },
   });
 

@@ -4,8 +4,20 @@ import { addEventListener, getInitialURL, parse } from 'expo-linking';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { queryClient } from '../lib/queryClient';
+import { setupFocusManager } from '../lib/focusManager';
+import { useRealtimeSync } from '../hooks/useRealtimeSync';
+
+function RealtimeSync() {
+  useRealtimeSync();
+  return null;
+}
 
 export default function RootLayout() {
+  useEffect(() => {
+    const teardown = setupFocusManager();
+    return teardown;
+  }, []);
+
   useEffect(() => {
     // Handle deep link when app is opened from email confirmation link
     const handleDeepLink = async (url: string) => {
@@ -40,6 +52,7 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <RealtimeSync />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="signup" />

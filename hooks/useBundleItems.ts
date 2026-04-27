@@ -1,6 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
 import {
   updateItemChecked,
@@ -10,6 +8,7 @@ import {
 } from '../queries/bundleItems';
 import { logActivity } from '../queries/activityFeed';
 import { bundleDetailKeys } from '../queries/keys';
+import { broadcast } from '../lib/syncChannel';
 import type { BundleDetail } from '../queries/bundle';
 
 export type { BundleDetailItem } from '../queries/bundleItems';
@@ -22,20 +21,6 @@ export function useBundleItems(bundleId: string) {
     ...bundleDetailKeys.items(bundleId),
     enabled: !!bundleId,
   });
-
-  // Realtime subscription
-  useEffect(() => {
-    if (!bundleId) return;
-    const channel = supabase
-      .channel(`bundle-items-${bundleId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'bundle_items', filter: `bundle_id=eq.${bundleId}` },
-        () => qc.invalidateQueries({ queryKey: bundleDetailKeys.items(bundleId).queryKey }),
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [bundleId, qc]);
 
   const toggleItem = useMutation({
     mutationFn: async (itemId: string) => {
@@ -66,7 +51,13 @@ export function useBundleItems(bundleId: string) {
         qc.setQueryData(bundleDetailKeys.items(bundleId).queryKey, context.prev);
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: bundleDetailKeys.items(bundleId).queryKey }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: bundleDetailKeys.items(bundleId).queryKey });
+      if (userId) {
+        broadcast({ type: 'bundle_items_changed', bundleId, userId });
+        broadcast({ type: 'activity_changed', userId });
+      }
+    },
   });
 
   const addItem = useMutation({
@@ -83,7 +74,13 @@ export function useBundleItems(bundleId: string) {
         });
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: bundleDetailKeys.items(bundleId).queryKey }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: bundleDetailKeys.items(bundleId).queryKey });
+      if (userId) {
+        broadcast({ type: 'bundle_items_changed', bundleId, userId });
+        broadcast({ type: 'activity_changed', userId });
+      }
+    },
   });
 
   const deleteItem = useMutation({
@@ -99,7 +96,13 @@ export function useBundleItems(bundleId: string) {
         });
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: bundleDetailKeys.items(bundleId).queryKey }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: bundleDetailKeys.items(bundleId).queryKey });
+      if (userId) {
+        broadcast({ type: 'bundle_items_changed', bundleId, userId });
+        broadcast({ type: 'activity_changed', userId });
+      }
+    },
   });
 
   return {
